@@ -1696,6 +1696,7 @@ pub(crate) struct PlatformSpecificWebViewAttributes {
   extension_path: Option<PathBuf>,
   default_context_menus: bool,
   environment: Option<ICoreWebView2Environment>,
+  skip_all_initialization_scripts: bool,
 }
 
 #[cfg(windows)]
@@ -1711,6 +1712,7 @@ impl Default for PlatformSpecificWebViewAttributes {
       browser_extensions_enabled: false,
       extension_path: None,
       environment: None,
+      skip_all_initialization_scripts: false,
     }
   }
 }
@@ -1795,6 +1797,17 @@ pub trait WebViewBuilderExtWindows {
   /// Set the environment for the webview.
   /// Useful if you need to share the same environment, for instance when using the [`WebViewBuilder::with_new_window_req_handler`].
   fn with_environment(self, environment: ICoreWebView2Environment) -> Self;
+
+  /// Skip registering any [`WebViewAttributes::initialization_scripts`] on this webview.
+  ///
+  /// When set to `true`, wry will not call `AddScriptToExecuteOnDocumentCreated` for any
+  /// initialization scripts (including those injected by framework integrations such as
+  /// Tauri's IPC bootstrap). This is useful for webviews that host fully external content
+  /// and must not expose framework-specific globals (e.g. `window.__TAURI_INTERNALS__`,
+  /// `window.isTauri`).
+  ///
+  /// The default value is `false`.
+  fn with_skip_all_initialization_scripts(self, skip: bool) -> Self;
 }
 
 #[cfg(windows)]
@@ -1841,6 +1854,11 @@ impl WebViewBuilderExtWindows for WebViewBuilder<'_> {
 
   fn with_environment(mut self, environment: ICoreWebView2Environment) -> Self {
     self.platform_specific.environment.replace(environment);
+    self
+  }
+
+  fn with_skip_all_initialization_scripts(mut self, skip: bool) -> Self {
+    self.platform_specific.skip_all_initialization_scripts = skip;
     self
   }
 }

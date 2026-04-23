@@ -490,8 +490,10 @@ impl InnerWebView {
     }
 
     // Initialize main and subframe scripts
-    for init_script in attributes.initialization_scripts {
-      Self::add_script_to_execute_on_document_created(&webview, init_script.script)?;
+    if !pl_attrs.skip_all_initialization_scripts {
+      for init_script in attributes.initialization_scripts {
+        Self::add_script_to_execute_on_document_created(&webview, init_script.script)?;
+      }
     }
 
     // Enable clipboard
