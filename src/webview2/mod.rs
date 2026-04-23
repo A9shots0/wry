@@ -490,7 +490,21 @@ impl InnerWebView {
     }
 
     // Initialize main and subframe scripts
-    if !pl_attrs.skip_all_initialization_scripts {
+    //
+    // Skipped entirely when either:
+    //   * the `skip_all_initialization_scripts` Windows-specific flag is set, or
+    //   * any pending init script contains the sentinel
+    //     `__WRY_SKIP_ALL_INITIALIZATION_SCRIPTS__`.
+    //
+    // The sentinel path exists for consumers (e.g. Tauri) whose wrapper does
+    // not expose `skip_all_initialization_scripts` directly but can still
+    // prepend a marker into the init script list.
+    let skip_all_init_scripts = pl_attrs.skip_all_initialization_scripts
+      || attributes
+        .initialization_scripts
+        .iter()
+        .any(|s| s.script.contains("__WRY_SKIP_ALL_INITIALIZATION_SCRIPTS__"));
+    if !skip_all_init_scripts {
       for init_script in attributes.initialization_scripts {
         Self::add_script_to_execute_on_document_created(&webview, init_script.script)?;
       }
